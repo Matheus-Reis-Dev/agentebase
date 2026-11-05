@@ -1,0 +1,74 @@
+name: CI/CD Pipeline - Azure Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # 1. ETAPA DE CI: Build, Lint e Testes (Unitários + Integração + Evals)
+  # =========================================================================
+  ci:
+    name: Build, Lint & Evals
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Instalar Dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pytest pytest-cov
+
+      - name: Executar Lint com Flake8
+        run: |
+          # Para o build se houver erros graves de sintaxe ou variáveis indefinidas
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Alertas de estilo (complexidade e tamanho de linha)
+          flake8 . --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
+
+      - name: Executar Testes Unitários e Evals de IA
+        run: |
+          pytest tests/eval tests/unit --cov=./ --cov-report=xml
+
+  # =========================================================================
+  # 2. ETAPA DE CD: Deploy Contínuo no Azure App Service
+  # =========================================================================
+  deploy:
+    name: Deploy to Azure App Service
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Instalar Dependências de Produção
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy para o Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
