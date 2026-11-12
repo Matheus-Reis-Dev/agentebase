@@ -41,9 +41,9 @@ jobs:
           # Alertas de estilo (complexidade e tamanho de linha)
           flake8 . --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
 
-      - name: Executar Testes Unitários e Evals de IA
+      - name: Executar Todos os Testes da Suíte (Unitários, Integração, UI e Evals)
         run: |
-          pytest tests/eval tests/unit --cov=./ --cov-report=xml
+          pytest tests/ --cov=./ --cov-report=xml
 
   # =========================================================================
   # 2. ETAPA DE CD: Deploy Contínuo no Azure App Service
@@ -72,3 +72,4 @@ jobs:
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+
