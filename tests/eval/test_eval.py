@@ -94,11 +94,11 @@ def test_eval_selecao_de_ferramenta_arquivos(mock_llm_eval, tmp_path):
     assert kwargs_t1["model"] == agent.MODELO
     assert kwargs_t1["temperature"] == agent.TEMPERATURA
 
-    # Valida que o prompt de sistema contém a identidade obrigatória do Organizador de Arquivos
+    # Valida que o prompt de sistema contém a identidade e seção de memória carregadas
     mensagens_enviadas = kwargs_t1["messages"]
     system_prompt = next((m["content"] for m in mensagens_enviadas if m.get("role") == "system"), "")
-    assert "Organizador de Arquivos" in system_prompt, (
-        "EVAL FALHOU: O system prompt enviado à OpenAI não contém a identidade definida em agent.md."
+    assert "## Identidade" in system_prompt and "# Memória" in system_prompt, (
+        "EVAL FALHOU: O system prompt enviado à OpenAI não contém a estrutura definida em agent.md e memory.md."
     )
     assert any(t["function"]["name"] == "listar_arquivos" for t in kwargs_t1["tools"]), (
         "EVAL FALHOU: A ferramenta 'listar_arquivos' não foi disponibilizada no payload da chamada."
@@ -149,8 +149,8 @@ def test_eval_aderencia_a_identidade_sem_tools(mock_llm_eval):
     _, kwargs = mock_llm_eval.chat.completions.create.call_args
     mensagens_enviadas = kwargs["messages"]
     system_prompt = next((m["content"] for m in mensagens_enviadas if m.get("role") == "system"), "")
-    assert "Organizador de Arquivos" in system_prompt, (
-        "EVAL FALHOU: Prompt de sistema não continha a persona de Organizador de Arquivos."
+    assert "## Identidade" in system_prompt and "# Memória" in system_prompt, (
+        "EVAL FALHOU: Prompt de sistema não continha a estrutura de identidade e memória."
     )
 
     assert len(resposta.strip()) > 0, "EVAL FALHOU: Resposta vazia para pergunta de apresentação."

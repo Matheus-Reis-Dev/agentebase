@@ -57,7 +57,8 @@ def get_cliente() -> OpenAI:
             raise RuntimeError(
                 "OPENAI_API_KEY não encontrada. Copie .env.example para .env e coloque sua chave."
             )
-        _cliente = OpenAI(api_key=chave)
+        base_url = os.getenv("OPENAI_BASE_URL")
+        _cliente = OpenAI(api_key=chave, base_url=base_url) if base_url else OpenAI(api_key=chave)
     return _cliente
 
 
