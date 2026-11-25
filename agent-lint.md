@@ -45,6 +45,9 @@ diferença importa: você critica o código, nunca a pessoa.
 | Ferramenta | Quando usar |
 |---|---|
 | `somar` | Qualquer adição que precise ser exata |
+| `analisar_complexidade_codigo` | Medir linhas, parâmetros, aninhamento e complexidade ciclomática de funções Python antes de apontar excesso de complexidade |
+| `detectar_antipadroes_python` | Inspecionar código Python para localizar bugs, riscos de segurança e antipadrões ordenados por gravidade (sem inventar achados em código limpo) |
+| `gerar_checklist_revisao` | Obter checklist objetivo de revisão sênior por tipo de mudança (`api`, `concorrencia`, `seguranca`, `refatoracao`, `geral`) |
 
 ## Exemplo do tom
 

@@ -14,6 +14,30 @@ import streamlit as st
 from streamlit.runtime import exists as st_runtime_ativo
 
 import agent
+import agent_core
+
+OPCOES_PERFIL: dict[str, str | None] = {
+    "Padrão (agent.py)": None,
+    "Base (agent.md)": "agent.md",
+    "Ada (agent-ada.md)": "agent-ada.md",
+    "Lint (agent-lint.md)": "agent-lint.md",
+    "Val (agent-val.md)": "agent-val.md",
+    "Organizador (agent-organizador.md)": "agent-organizador.md",
+}
+
+
+def _resolver_modulo_perfil(rotulo: str):
+    """Resolve o módulo do perfil selecionado, com fallback seguro para `agent`."""
+    arquivo_perfil = OPCOES_PERFIL.get(rotulo)
+    if arquivo_perfil is None:
+        return rotulo, agent, None
+    try:
+        modulo = agent_core.obter_modulo_perfil(arquivo_perfil)
+        return rotulo, modulo, None
+    except (ImportError, ValueError) as exc:
+        aviso = f"Perfil '{rotulo}' indisponível no momento ({exc}). Usando 'Padrão (agent.py)'."
+        return "Padrão (agent.py)", agent, aviso
+
 
 # Um app Streamlit precisa ser iniciado pelo comando `streamlit run`. Com
 # `python app.py` o script roda sem o runtime: nada aparece na tela e o
@@ -45,14 +69,26 @@ except RuntimeError as erro:
 #   mensagens -> histórico no formato da API (inclui as chamadas de ferramenta)
 #   tela      -> o que o usuário vê (não mostramos JSON de ferramenta na tela)
 
-if "mensagens" not in st.session_state:
-    st.session_state.mensagens = [{"role": "system", "content": agent.carregar_contexto()}]
+with st.sidebar:
+    perfil_escolhido = st.selectbox(
+        "Perfil do agente",
+        list(OPCOES_PERFIL.keys()),
+        index=0,
+        key="perfil_selecionado",
+    )
+    perfil_efetivo, modulo_ativo, aviso_perfil = _resolver_modulo_perfil(perfil_escolhido)
+    if aviso_perfil:
+        st.warning(aviso_perfil)
+    st.caption(f"Modelo: `{agent.MODELO}`")
+
+if "mensagens" not in st.session_state or st.session_state.get("perfil_ativo") != perfil_efetivo:
+    st.session_state.perfil_ativo = perfil_efetivo
+    st.session_state.mensagens = [{"role": "system", "content": modulo_ativo.carregar_contexto()}]
     st.session_state.tela = []
 
 with st.sidebar:
-    st.caption(f"Modelo: `{agent.MODELO}`")
     if st.button("Nova conversa", use_container_width=True):
-        st.session_state.mensagens = [{"role": "system", "content": agent.carregar_contexto()}]
+        st.session_state.mensagens = [{"role": "system", "content": modulo_ativo.carregar_contexto()}]
         st.session_state.tela = []
         st.rerun()
 
@@ -83,7 +119,7 @@ if pergunta:
 
     with st.chat_message("assistant"), st.spinner("Pensando..."):
         try:
-            resposta = agent.responder(st.session_state.mensagens)
+            resposta = modulo_ativo.responder(st.session_state.mensagens)
             st.markdown(resposta)
             st.session_state.tela.append(("assistant", resposta))
         except Exception as erro:
